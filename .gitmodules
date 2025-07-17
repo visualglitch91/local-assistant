@@ -1,0 +1,6 @@
+[submodule "wyoming-openwakeword"]
+	path = wyoming-openwakeword
+	url = https://github.com/rhasspy/wyoming-openwakeword/
+[submodule "wyoming-satellite"]
+	path = wyoming-satellite
+	url = https://github.com/rhasspy/wyoming-satellite

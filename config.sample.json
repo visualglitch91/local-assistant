@@ -1,0 +1,5 @@
+{
+  "wake_word": "ok_nabu",
+  "snapserver": "192.168.1.100",
+  "mic_device": "alsa_input.pci-0000_00_1b.0.analog-stereo"
+}

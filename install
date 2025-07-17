@@ -1,0 +1,53 @@
+#!/bin/sh
+
+# Always update package list before installing
+sudo apt update -y
+
+# Install all required packages
+sudo apt install -y \
+  snapclient git unzip \
+  python3-venv python3-pip wireplumber \
+  pipewire pipewire-audio-client-libraries
+
+# Install Bun if not present
+if [ ! -f "$HOME/.bun/bin/bun" ]; then
+  curl -fsSL https://bun.sh/install | bash
+fi
+
+# Link Bun to Node (note: overwriting /usr/bin/node may break software expecting actual Node.js)
+if [ ! -f /usr/bin/node ]; then
+  sudo ln -sf "$HOME/.bun/bin/bun" /usr/bin/node
+fi
+
+export PATH=$PATH:$HOME/.bun/bin
+
+# Install PM2 globally with Bun if not already installed
+if ! command -v pm2 >/dev/null 2>&1; then
+  bun add -g pm2
+fi
+
+# Generate systemd startup script for PM2
+sudo env PATH=$PATH "$HOME/.bun/install/global/node_modules/pm2/bin/pm2" startup systemd -u "$USER" --hp "$HOME"
+pm2 delete ecosystem.config.js
+
+# Prompt user for hostname change
+current_hostname=$(hostname)
+echo "Current hostname: $current_hostname"
+read -r -p "Enter new hostname (leave empty to keep current): " new_hostname
+
+if [ -n "$new_hostname" ]; then
+  echo "$new_hostname" | sudo tee /etc/hostname > /dev/null
+  sudo sed -i "s/$current_hostname/$new_hostname/g" /etc/hosts
+  sudo hostnamectl set-hostname "$new_hostname"
+fi
+
+# Ensure submodules are initialized and updated
+git submodule update --init --recursive
+
+# Setup submodule environments (assumes scripts exist and are executable)
+sh -c "cd ./wyoming-openwakeword && script/setup"
+sh -c "cd ./wyoming-satellite && script/setup"
+
+# Start PM2 with local ecosystem config
+pm2 start ecosystem.config.js
+pm2 save
